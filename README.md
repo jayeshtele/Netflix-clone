@@ -1,16 +1,38 @@
-# React + Vite
+# Netflix Clone
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A responsive Netflix-style streaming UI built with React, Vite, Tailwind CSS, Redux Toolkit, React Redux, and React Router.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Responsive home page with hero banner, carousel rows, ranked titles, and continue-watching progress.
+- Browse pages for TV Shows, Movies, and New & Popular with genre filtering and sorting.
+- Search page for titles, cast, genres, moods, and creator names.
+- Title detail pages with similar-title recommendations.
+- My List state managed with Redux Toolkit.
+- Preview modal, profile menu, mobile navigation, and mute/list controls.
+- Netlify SPA routing via `netlify.toml`.
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run dev
+npm run lint
+npm run build
+npm run preview
+```
 
-## Expanding the ESLint configuration
+## Netlify
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Build command:
+
+```bash
+npm run build
+```
+
+Publish directory:
+
+```bash
+dist
+```
+
+Continuous deployment can be connected to the GitHub repository so every pushed commit triggers a fresh Netlify build.

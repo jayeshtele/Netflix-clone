@@ -17,5 +17,22 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[regex]',
+          message: 'Regular expressions are not allowed in this project.',
+        },
+        {
+          selector: "NewExpression[callee.name='RegExp']",
+          message: 'Regular expressions are not allowed in this project.',
+        },
+        {
+          selector: "CallExpression[callee.name='RegExp']",
+          message: 'Regular expressions are not allowed in this project.',
+        },
+      ],
+    },
   },
 ])

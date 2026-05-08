@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Youtube } from 'lucide-react'
+import { Clapperboard, MessageCircle, Share2 } from 'lucide-react'
 
 const footerLinks = [
   'Audio Description',
@@ -19,9 +19,9 @@ function Footer() {
   return (
     <footer className="mx-auto mt-16 w-full max-w-[1100px] px-4 pb-12 pt-8 text-zinc-500 sm:px-6">
       <div className="flex gap-4 text-zinc-300">
-        <Instagram size={21} />
-        <Facebook size={21} />
-        <Youtube size={21} />
+        <MessageCircle size={21} />
+        <Share2 size={21} />
+        <Clapperboard size={21} />
       </div>
 
       <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
