@@ -1,10 +1,12 @@
 import { useSelector } from 'react-redux'
 import EmptyState from '../components/EmptyState'
 import TitleCard from '../components/TitleCard'
-import { selectMyListTitles } from '../features/librarySlice'
+import TitleRow from '../components/TitleRow'
+import { selectMyListSections, selectMyListTitles } from '../features/librarySlice'
 
 function MyList() {
   const titles = useSelector(selectMyListTitles)
+  const sections = useSelector(selectMyListSections)
 
   return (
     <section className="pt-28">
@@ -24,11 +26,27 @@ function MyList() {
           actionPath="/new"
         />
       ) : (
-        <div className="mx-auto mt-8 grid max-w-[1500px] grid-cols-2 gap-3 px-4 sm:grid-cols-3 sm:px-6 md:grid-cols-4 lg:grid-cols-5 lg:px-10 xl:grid-cols-6">
-          {titles.map((title) => (
-            <TitleCard key={title.id} title={title} compact />
-          ))}
-        </div>
+        <>
+          <div className="mt-7 space-y-2">
+            {sections.map((section) => (
+              <TitleRow
+                key={section.id}
+                title={section.title}
+                variant={section.variant}
+                titles={section.titles}
+              />
+            ))}
+          </div>
+
+          <section className="mx-auto mt-8 max-w-[1500px] px-4 sm:px-6 lg:px-10">
+            <h2 className="text-xl font-black text-white sm:text-2xl">All Saved Titles</h2>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {titles.map((title) => (
+                <TitleCard key={title.id} title={title} compact />
+              ))}
+            </div>
+          </section>
+        </>
       )}
     </section>
   )

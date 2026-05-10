@@ -2,6 +2,7 @@ import { Check, Play, Plus, Volume2, VolumeX, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { getTrailerEmbedUrl } from '../services/catalogApi'
 import {
   closePreview,
   openPreview,
@@ -42,6 +43,8 @@ function PreviewModal() {
     return null
   }
 
+  const trailerSrc = getTrailerPlayerUrl(title, muted)
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-black/78 px-3 py-8 sm:px-6"
@@ -54,8 +57,21 @@ function PreviewModal() {
         className="mx-auto max-w-4xl overflow-hidden rounded-md bg-zinc-950 shadow-2xl ring-1 ring-white/15"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative min-h-[360px] bg-cover bg-center" style={{ backgroundImage: `url(${title.backdrop})` }}>
-          <div className="hero-fade absolute inset-0" aria-hidden="true" />
+        <div className="relative min-h-[360px] overflow-hidden bg-black">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${title.backdrop})` }}
+            aria-hidden="true"
+          />
+          <iframe
+            className="absolute inset-0 h-full w-full opacity-75"
+            src={trailerSrc}
+            title={`${title.title} trailer`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+          <div className="hero-fade pointer-events-none absolute inset-0" aria-hidden="true" />
           <button
             type="button"
             className="netflix-focus absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/75 text-white hover:bg-black"
@@ -134,6 +150,27 @@ function PreviewModal() {
       </div>
     </div>
   )
+}
+
+function getTrailerPlayerUrl(title, muted) {
+  const embedUrl = title.trailerEmbedUrl || getTrailerEmbedUrl(title.title, title.trailerUrl)
+
+  try {
+    const url = new URL(embedUrl)
+    url.searchParams.set('autoplay', '1')
+    url.searchParams.set('controls', '1')
+    url.searchParams.set('mute', muted ? '1' : '0')
+    url.searchParams.set('playsinline', '1')
+    url.searchParams.set('rel', '0')
+
+    if (typeof window !== 'undefined') {
+      url.searchParams.set('origin', window.location.origin)
+    }
+
+    return url.toString()
+  } catch {
+    return embedUrl
+  }
 }
 
 export default PreviewModal

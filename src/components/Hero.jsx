@@ -6,7 +6,11 @@ import { openPreview, selectIsInMyList, toggleMuted, toggleMyList } from '../fea
 function Hero({ title }) {
   const dispatch = useDispatch()
   const muted = useSelector((state) => state.library.muted)
-  const isInMyList = useSelector((state) => selectIsInMyList(state, title.id))
+  const isInMyList = useSelector((state) => (title ? selectIsInMyList(state, title.id) : false))
+
+  if (!title) {
+    return null
+  }
 
   return (
     <section className="relative min-h-[680px] overflow-hidden pt-16 sm:min-h-[720px] lg:min-h-[760px]">
