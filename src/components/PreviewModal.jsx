@@ -1,8 +1,10 @@
-import { Check, Play, Plus, Volume2, VolumeX, X } from 'lucide-react'
+import { Check, ExternalLink, Play, Plus, Volume2, VolumeX, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getTrailerEmbedUrl } from '../services/catalogApi'
+import FallbackImage from './FallbackImage'
+import { FALLBACK_BACKDROP } from '../utils/fallbackImages'
 import {
   closePreview,
   openPreview,
@@ -58,9 +60,11 @@ function PreviewModal() {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="relative min-h-[360px] overflow-hidden bg-black">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${title.backdrop})` }}
+          <FallbackImage
+            src={title.backdrop}
+            fallbackSrc={FALLBACK_BACKDROP}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
             aria-hidden="true"
           />
           <iframe
@@ -130,9 +134,26 @@ function PreviewModal() {
             >
               Open details
             </Link>
+            {title.netflixLink && (
+              <a
+                href={title.netflixLink}
+                target="_blank"
+                rel="noreferrer"
+                className="netflix-focus ml-3 mt-5 inline-flex h-10 items-center gap-2 rounded-md border border-white/20 px-4 text-sm font-bold text-white hover:bg-white/10"
+              >
+                <ExternalLink size={16} />
+                Open on Netflix
+              </a>
+            )}
           </div>
 
           <dl className="space-y-3 text-sm">
+            <div>
+              <dt className="text-zinc-500">Availability</dt>
+              <dd className="text-zinc-200">
+                {title.availabilityCountry ? `Netflix ${title.availabilityCountry}` : 'Netflix demo catalog'}
+              </dd>
+            </div>
             <div>
               <dt className="text-zinc-500">Cast</dt>
               <dd className="text-zinc-200">{title.cast.join(', ')}</dd>

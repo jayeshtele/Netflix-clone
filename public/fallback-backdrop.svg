@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Fallback title backdrop">
+  <defs>
+    <linearGradient id="backdrop-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#050505"/>
+      <stop offset="0.55" stop-color="#151515"/>
+      <stop offset="1" stop-color="#4a050b"/>
+    </linearGradient>
+    <radialGradient id="spotlight" cx="72%" cy="40%" r="50%">
+      <stop offset="0" stop-color="#e50914" stop-opacity="0.55"/>
+      <stop offset="0.58" stop-color="#e50914" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#backdrop-bg)"/>
+  <rect width="1600" height="900" fill="url(#spotlight)"/>
+  <path d="M1040 210h124l106 362 106-362h121v654h-115V429l-59 435h-106l-62-435v435h-115V210Z" fill="#e50914" opacity="0.88"/>
+  <path d="M0 0h1600v900H0z" fill="#000" opacity="0.1"/>
+  <text x="140" y="716" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="900">NETFLIX</text>
+  <text x="142" y="780" fill="#d4d4d8" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">Preview image unavailable</text>
+</svg>

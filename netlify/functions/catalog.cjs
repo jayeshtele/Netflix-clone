@@ -1,13 +1,53 @@
-const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'imdb236.p.rapidapi.com'
+const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'streaming-availability.p.rapidapi.com'
 const RAPIDAPI_BASE_URL = process.env.RAPIDAPI_BASE_URL || `https://${RAPIDAPI_HOST}`
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY
+const NETFLIX_COUNTRY = (process.env.NETFLIX_COUNTRY || 'in').toLowerCase()
+const NETFLIX_CATALOG = process.env.NETFLIX_CATALOG || 'netflix'
+const CURRENT_YEAR = new Date().getFullYear()
 
 const requests = [
-  { id: 'popularMovies', path: '/api/imdb/most-popular-movies' },
-  { id: 'popularSeries', path: '/api/imdb/most-popular-tv' },
-  { id: 'topMovies', path: '/api/imdb/top250-movies' },
-  { id: 'topSeries', path: '/api/imdb/top250-tv' },
-  { id: 'indiaMovies', path: '/api/imdb/india/top-rated-indian-movies' },
+  { id: 'topMovies', path: '/shows/top', query: { service: 'netflix', show_type: 'movie' } },
+  { id: 'topSeries', path: '/shows/top', query: { service: 'netflix', show_type: 'series' } },
+  {
+    id: 'popularMovies',
+    path: '/shows/search/filters',
+    query: { catalogs: NETFLIX_CATALOG, show_type: 'movie', order_by: 'popularity_1week' },
+  },
+  {
+    id: 'popularSeries',
+    path: '/shows/search/filters',
+    query: { catalogs: NETFLIX_CATALOG, show_type: 'series', order_by: 'popularity_1week' },
+  },
+  {
+    id: 'newMovies',
+    path: '/shows/search/filters',
+    query: {
+      catalogs: NETFLIX_CATALOG,
+      show_type: 'movie',
+      order_by: 'popularity_1week',
+      year_min: String(CURRENT_YEAR - 2),
+    },
+  },
+  {
+    id: 'newSeries',
+    path: '/shows/search/filters',
+    query: {
+      catalogs: NETFLIX_CATALOG,
+      show_type: 'series',
+      order_by: 'popularity_1week',
+      year_min: String(CURRENT_YEAR - 2),
+    },
+  },
+  {
+    id: 'acclaimed',
+    path: '/shows/search/filters',
+    query: { catalogs: NETFLIX_CATALOG, order_by: 'rating', rating_min: '75' },
+  },
+  {
+    id: 'newOnNetflix',
+    path: '/changes',
+    query: { catalogs: NETFLIX_CATALOG, change_type: 'new', item_type: 'show' },
+  },
 ]
 
 exports.handler = async () => {
@@ -23,7 +63,7 @@ exports.handler = async () => {
   await Promise.all(
     requests.map(async (request) => {
       try {
-        groups[request.id] = await fetchRapidApiPath(request.path)
+        groups[request.id] = await fetchRapidApiPath(request.path, request.query)
       } catch (error) {
         errors.push({
           section: request.id,
@@ -35,7 +75,7 @@ exports.handler = async () => {
 
   if (Object.keys(groups).length === 0) {
     return jsonResponse(502, {
-      error: 'RapidAPI did not return catalog data.',
+      error: 'RapidAPI did not return Netflix catalog data.',
       errors,
     })
   }
@@ -43,14 +83,15 @@ exports.handler = async () => {
   return jsonResponse(200, {
     source: 'rapidapi',
     provider: RAPIDAPI_HOST,
+    country: NETFLIX_COUNTRY,
     groups,
     errors,
     fetchedAt: new Date().toISOString(),
   })
 }
 
-async function fetchRapidApiPath(path) {
-  const response = await fetch(`${RAPIDAPI_BASE_URL}${path}`, {
+async function fetchRapidApiPath(path, query) {
+  const response = await fetch(buildRapidApiUrl(path, query), {
     headers: {
       'x-rapidapi-host': RAPIDAPI_HOST,
       'x-rapidapi-key': RAPIDAPI_KEY,
@@ -61,29 +102,25 @@ async function fetchRapidApiPath(path) {
     throw new Error(`RapidAPI ${path} returned ${response.status}`)
   }
 
-  const data = await response.json()
+  return response.json()
+}
 
-  if (Array.isArray(data)) {
-    return data
+function buildRapidApiUrl(path, query = {}) {
+  const url = new URL(path, RAPIDAPI_BASE_URL)
+  const params = {
+    country: NETFLIX_COUNTRY,
+    output_language: 'en',
+    series_granularity: 'show',
+    ...query,
   }
 
-  if (data && Array.isArray(data.results)) {
-    return data.results
-  }
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, value)
+    }
+  })
 
-  if (data && Array.isArray(data.items)) {
-    return data.items
-  }
-
-  if (data && Array.isArray(data.titles)) {
-    return data.titles
-  }
-
-  if (data && Array.isArray(data.shows)) {
-    return data.shows
-  }
-
-  return []
+  return url.toString()
 }
 
 function jsonResponse(statusCode, payload) {

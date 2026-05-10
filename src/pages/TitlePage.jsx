@@ -1,7 +1,8 @@
-import { ArrowLeft, Check, Play, Plus, Star } from 'lucide-react'
+import { ArrowLeft, Check, ExternalLink, Play, Plus, Star } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import TitleCard from '../components/TitleCard'
+import FallbackImage from '../components/FallbackImage'
 import {
   openPreview,
   selectAllTitles,
@@ -9,6 +10,7 @@ import {
   selectTitleById,
   toggleMyList,
 } from '../features/librarySlice'
+import { FALLBACK_BACKDROP } from '../utils/fallbackImages'
 
 function TitlePage() {
   const { titleId } = useParams()
@@ -29,9 +31,11 @@ function TitlePage() {
   return (
     <article>
       <section className="relative min-h-[640px] overflow-hidden pt-16">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${title.backdrop})` }}
+        <FallbackImage
+          src={title.backdrop}
+          fallbackSrc={FALLBACK_BACKDROP}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
           aria-hidden="true"
         />
         <div className="hero-fade absolute inset-0" aria-hidden="true" />
@@ -77,6 +81,17 @@ function TitlePage() {
                 {isInMyList ? <Check size={20} /> : <Plus size={20} />}
                 My List
               </button>
+              {title.netflixLink && (
+                <a
+                  href={title.netflixLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="netflix-focus inline-flex h-11 items-center gap-2 rounded-md border border-white/35 bg-black/45 px-5 text-sm font-bold text-white hover:bg-white/10 sm:text-base"
+                >
+                  <ExternalLink size={20} />
+                  Open on Netflix
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -104,6 +119,12 @@ function TitlePage() {
         </div>
 
         <dl className="space-y-4 rounded-md border border-white/10 bg-zinc-950 p-5 text-sm">
+          <div>
+            <dt className="text-zinc-500">Availability</dt>
+            <dd className="mt-1 text-zinc-200">
+              {title.availabilityCountry ? `Netflix ${title.availabilityCountry}` : 'Netflix demo catalog'}
+            </dd>
+          </div>
           <div>
             <dt className="text-zinc-500">Cast</dt>
             <dd className="mt-1 text-zinc-200">{title.cast.join(', ')}</dd>

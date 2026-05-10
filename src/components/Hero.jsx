@@ -2,6 +2,8 @@ import { Check, Info, Play, Plus, Volume2, VolumeX } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { openPreview, selectIsInMyList, toggleMuted, toggleMyList } from '../features/librarySlice'
+import FallbackImage from './FallbackImage'
+import { FALLBACK_BACKDROP } from '../utils/fallbackImages'
 
 function Hero({ title }) {
   const dispatch = useDispatch()
@@ -14,9 +16,11 @@ function Hero({ title }) {
 
   return (
     <section className="relative min-h-[680px] overflow-hidden pt-16 sm:min-h-[720px] lg:min-h-[760px]">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${title.backdrop})` }}
+      <FallbackImage
+        src={title.backdrop}
+        fallbackSrc={FALLBACK_BACKDROP}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
         aria-hidden="true"
       />
       <div className="hero-fade absolute inset-0" aria-hidden="true" />
@@ -25,7 +29,7 @@ function Hero({ title }) {
         <div className="max-w-2xl">
           <div className="mb-5 inline-flex items-center gap-2 rounded bg-netflix px-3 py-1 text-xs font-black uppercase text-white">
             <span className="h-2 w-2 rounded-full bg-white" />
-            Series
+            {title.type}
           </div>
 
           <h1 className="max-w-xl text-5xl font-black leading-none text-white sm:text-6xl lg:text-7xl">

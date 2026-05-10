@@ -1,25 +1,62 @@
-const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST || 'imdb236.p.rapidapi.com'
+import { FALLBACK_BACKDROP, FALLBACK_POSTER } from '../utils/fallbackImages'
+
+const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST || 'streaming-availability.p.rapidapi.com'
 const RAPIDAPI_BASE_URL = import.meta.env.VITE_RAPIDAPI_BASE_URL || `https://${RAPIDAPI_HOST}`
 const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY
+const NETFLIX_COUNTRY = (import.meta.env.VITE_NETFLIX_COUNTRY || 'in').toLowerCase()
+const NETFLIX_CATALOG = import.meta.env.VITE_NETFLIX_CATALOG || 'netflix'
 const SERVER_CATALOG_ENDPOINT = '/.netlify/functions/catalog'
 const CURRENT_YEAR = new Date().getFullYear()
 const FALLBACK_TRAILER_VIDEO_ID = 'b9EkMc79ZSU'
-const FALLBACK_POSTER =
-  'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=85'
-const FALLBACK_BACKDROP =
-  'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=85'
 
 const rapidApiRequests = [
-  { id: 'popularMovies', path: '/api/imdb/most-popular-movies' },
-  { id: 'popularSeries', path: '/api/imdb/most-popular-tv' },
-  { id: 'topMovies', path: '/api/imdb/top250-movies' },
-  { id: 'topSeries', path: '/api/imdb/top250-tv' },
-  { id: 'indiaMovies', path: '/api/imdb/india/top-rated-indian-movies' },
+  { id: 'topMovies', path: '/shows/top', query: { service: 'netflix', show_type: 'movie' } },
+  { id: 'topSeries', path: '/shows/top', query: { service: 'netflix', show_type: 'series' } },
+  {
+    id: 'popularMovies',
+    path: '/shows/search/filters',
+    query: { catalogs: NETFLIX_CATALOG, show_type: 'movie', order_by: 'popularity_1week' },
+  },
+  {
+    id: 'popularSeries',
+    path: '/shows/search/filters',
+    query: { catalogs: NETFLIX_CATALOG, show_type: 'series', order_by: 'popularity_1week' },
+  },
+  {
+    id: 'newMovies',
+    path: '/shows/search/filters',
+    query: {
+      catalogs: NETFLIX_CATALOG,
+      show_type: 'movie',
+      order_by: 'popularity_1week',
+      year_min: String(CURRENT_YEAR - 2),
+    },
+  },
+  {
+    id: 'newSeries',
+    path: '/shows/search/filters',
+    query: {
+      catalogs: NETFLIX_CATALOG,
+      show_type: 'series',
+      order_by: 'popularity_1week',
+      year_min: String(CURRENT_YEAR - 2),
+    },
+  },
+  {
+    id: 'acclaimed',
+    path: '/shows/search/filters',
+    query: { catalogs: NETFLIX_CATALOG, order_by: 'rating', rating_min: '75' },
+  },
+  {
+    id: 'newOnNetflix',
+    path: '/changes',
+    query: { catalogs: NETFLIX_CATALOG, change_type: 'new', item_type: 'show' },
+  },
 ]
 
 const curatedTrailerIds = {
   'breaking-bad': 'HhesaQXLuRY',
-  'dark': 'rrwycJ08PSA',
+  dark: 'rrwycJ08PSA',
   'money-heist': 'htqXL94Rza4',
   'stranger-things': 'b9EkMc79ZSU',
   'the-crown': 'JWtnJjn6ng0',
@@ -44,7 +81,7 @@ export async function fetchLiveCatalog() {
       titles: [],
       source: 'demo',
       provider: 'Local demo data',
-      message: 'Add RAPIDAPI_KEY for Netlify or VITE_RAPIDAPI_KEY for local Vite to load live titles.',
+      message: 'Add RAPIDAPI_KEY for Netlify or VITE_RAPIDAPI_KEY for local Vite to load Netflix catalog data.',
     }
   }
 
@@ -55,16 +92,13 @@ export async function fetchLiveCatalog() {
       titles: [],
       source: 'demo',
       provider: RAPIDAPI_HOST,
-      message: error instanceof Error ? error.message : 'RapidAPI catalog request failed.',
+      message: error instanceof Error ? error.message : 'RapidAPI Netflix catalog request failed.',
     }
   }
 }
 
 export function getTrailerEmbedUrl(titleName, trailerUrl) {
-  const videoId =
-    getYouTubeVideoId(trailerUrl) ||
-    curatedTrailerIds[toSlug(titleName)] ||
-    FALLBACK_TRAILER_VIDEO_ID
+  const videoId = getYouTubeVideoId(trailerUrl) || curatedTrailerIds[toSlug(titleName)] || FALLBACK_TRAILER_VIDEO_ID
 
   return `https://www.youtube-nocookie.com/embed/${videoId}`
 }
@@ -75,7 +109,7 @@ function normalizeCatalogPayload(payload) {
 
   Object.entries(groups).forEach(([groupId, groupItems]) => {
     coerceItems(groupItems).forEach((item, index) => {
-      const title = normalizeTitle(item, index, groupId, payload?.provider)
+      const title = normalizeTitle(item, index, groupId, payload?.provider, payload?.country)
 
       if (!title) {
         return
@@ -95,14 +129,15 @@ function normalizeCatalogPayload(payload) {
   const titles = Array.from(titlesById.values())
     .sort((first, second) => second.trendingScore - first.trendingScore)
     .map((title, index) => ({ ...title, rank: index + 1 }))
-    .slice(0, 90)
+    .slice(0, 120)
 
   return {
     titles,
     source: titles.length > 0 ? payload?.source || 'rapidapi' : 'demo',
     provider: payload?.provider || RAPIDAPI_HOST,
+    country: payload?.country || NETFLIX_COUNTRY,
     fetchedAt: payload?.fetchedAt || new Date().toISOString(),
-    message: payload?.errors?.length ? 'Some RapidAPI sections could not be loaded.' : '',
+    message: payload?.errors?.length ? 'Some Netflix catalog sections could not be loaded.' : '',
   }
 }
 
@@ -121,7 +156,7 @@ async function fetchRapidApiGroups() {
   await Promise.all(
     rapidApiRequests.map(async (request) => {
       try {
-        groups[request.id] = await requestRapidApiEndpoint(request.path)
+        groups[request.id] = await requestRapidApiEndpoint(request.path, request.query)
       } catch (error) {
         errors.push({
           section: request.id,
@@ -132,20 +167,21 @@ async function fetchRapidApiGroups() {
   )
 
   if (Object.keys(groups).length === 0) {
-    throw new Error('RapidAPI did not return any catalog sections.')
+    throw new Error('RapidAPI did not return any Netflix catalog sections.')
   }
 
   return {
     source: 'rapidapi',
     provider: RAPIDAPI_HOST,
+    country: NETFLIX_COUNTRY,
     groups,
     errors,
     fetchedAt: new Date().toISOString(),
   }
 }
 
-async function requestRapidApiEndpoint(path) {
-  const data = await fetchJson(`${RAPIDAPI_BASE_URL}${path}`, {
+async function requestRapidApiEndpoint(path, query = {}) {
+  const data = await fetchJson(buildRapidApiUrl(path, query), {
     headers: {
       'x-rapidapi-host': RAPIDAPI_HOST,
       'x-rapidapi-key': RAPIDAPI_KEY,
@@ -153,6 +189,24 @@ async function requestRapidApiEndpoint(path) {
   })
 
   return coerceItems(data)
+}
+
+function buildRapidApiUrl(path, query = {}) {
+  const url = new URL(path, RAPIDAPI_BASE_URL)
+  const params = {
+    country: NETFLIX_COUNTRY,
+    output_language: 'en',
+    series_granularity: 'show',
+    ...query,
+  }
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, value)
+    }
+  })
+
+  return url.toString()
 }
 
 async function fetchJson(url, options) {
@@ -166,30 +220,25 @@ async function fetchJson(url, options) {
   return response.json()
 }
 
-function normalizeTitle(rawTitle, index, groupId, provider) {
-  const title = firstText(
-    rawTitle.primaryTitle,
-    rawTitle.title,
-    rawTitle.titleText,
-    rawTitle.name,
-    rawTitle.originalTitle,
-  )
+function normalizeTitle(rawTitle, index, groupId, provider, country) {
+  const title = firstText(rawTitle.title, rawTitle.primaryTitle, rawTitle.name, rawTitle.originalTitle)
 
   if (!title) {
     return null
   }
 
-  const rawType = firstText(rawTitle.type, rawTitle.titleType, rawTitle.showType, rawTitle.kind)
+  const rawType = firstText(rawTitle.showType, rawTitle.type, rawTitle.titleType, rawTitle.kind)
   const type = getTitleType(rawType)
-  const year = toYear(rawTitle.startYear, rawTitle.releaseYear, rawTitle.year, rawTitle.releaseDate)
+  const year = toYear(rawTitle.releaseYear, rawTitle.firstAirYear, rawTitle.startYear, rawTitle.year)
   const genres = normalizeGenres(rawTitle.genres, rawTitle.genre, rawTitle.interests)
-  const rating = toNumber(rawTitle.averageRating, rawTitle.rating, rawTitle.voteAverage, rawTitle.imdbRating)
-  const runtime = toNumber(rawTitle.runtimeMinutes, rawTitle.runtime, rawTitle.durationMinutes)
+  const rating = toNumber(rawTitle.rating, rawTitle.averageRating, rawTitle.voteAverage, rawTitle.imdbRating)
+  const runtime = toNumber(rawTitle.runtime, rawTitle.runtimeMinutes, rawTitle.durationMinutes)
   const match = clamp(Math.round((rating <= 10 ? rating * 10 : rating) || 84), 70, 99)
-  const apiId = firstText(rawTitle.id, rawTitle.imdbId, rawTitle.imdbID, rawTitle.tconst, rawTitle.titleId)
+  const apiId = firstText(rawTitle.id, rawTitle.imdbId, rawTitle.imdbID, rawTitle.tconst, rawTitle.tmdbId, rawTitle.titleId)
   const id = apiId || `${toSlug(title)}-${year || index + 1}`
   const poster = getPoster(rawTitle)
   const backdrop = getBackdrop(rawTitle, poster)
+  const netflixOption = getNetflixOption(rawTitle.streamingOptions, country)
   const trailerUrl = firstText(
     rawTitle.trailer,
     rawTitle.trailerUrl,
@@ -200,7 +249,8 @@ function normalizeTitle(rawTitle, index, groupId, provider) {
 
   return {
     id,
-    imdbId: firstText(rawTitle.imdbId, rawTitle.imdbID, rawTitle.tconst, apiId),
+    imdbId: firstText(rawTitle.imdbId, rawTitle.imdbID, rawTitle.tconst),
+    tmdbId: firstText(rawTitle.tmdbId),
     title,
     type,
     year: year || CURRENT_YEAR,
@@ -209,22 +259,24 @@ function normalizeTitle(rawTitle, index, groupId, provider) {
     duration: runtime ? formatRuntime(runtime) : type === 'Movie' ? '2h' : '45m',
     match,
     rank: index + 1,
-    tagline: getTagline(rawTitle, genres),
+    tagline: getTagline(rawTitle, genres, country),
     synopsis:
-      firstText(rawTitle.description, rawTitle.overview, rawTitle.plot, rawTitle.plotText) ||
-      `${title} is a ${type.toLowerCase()} from the live RapidAPI catalog.`,
+      firstText(rawTitle.overview, rawTitle.description, rawTitle.plot, rawTitle.plotText) ||
+      `${title} is currently listed in the Netflix ${String(country || NETFLIX_COUNTRY).toUpperCase()} catalog.`,
     creator: getCreator(rawTitle, type),
     cast: normalizeStringArray(rawTitle.cast, rawTitle.stars, rawTitle.actors).slice(0, 5),
     genres,
     mood: getMood(genres, match),
     badge: getBadge(groupId, index, year),
-    isNew: groupId === 'popularMovies' || groupId === 'popularSeries' || (year && year >= CURRENT_YEAR - 2),
-    isTopTen: index < 10,
+    isNew: groupId === 'newMovies' || groupId === 'newSeries' || groupId === 'newOnNetflix' || (year && year >= CURRENT_YEAR - 2),
+    isTopTen: groupId === 'topMovies' || groupId === 'topSeries' || index < 10,
     trendingScore: getTrendingScore(groupId, index, match, year),
     backdrop,
     poster,
     trailerUrl,
     trailerEmbedUrl: getTrailerEmbedUrl(title, trailerUrl),
+    netflixLink: firstText(netflixOption?.link, netflixOption?.videoLink),
+    availabilityCountry: String(country || NETFLIX_COUNTRY).toUpperCase(),
     apiProvider: provider || RAPIDAPI_HOST,
   }
 }
@@ -237,35 +289,52 @@ function mergeTitle(existingTitle, incomingTitle) {
     trendingScore: Math.max(existingTitle.trendingScore, incomingTitle.trendingScore),
     match: Math.max(existingTitle.match, incomingTitle.match),
     badge: existingTitle.isTopTen ? existingTitle.badge : incomingTitle.badge,
+    netflixLink: existingTitle.netflixLink || incomingTitle.netflixLink,
   }
 }
 
 function coerceItems(data) {
   if (Array.isArray(data)) {
-    return data
+    return data.map(unwrapTitle)
   }
 
   if (!data || typeof data !== 'object') {
     return []
   }
 
+  if (Array.isArray(data.shows)) {
+    return data.shows.map(unwrapTitle)
+  }
+
+  if (data.shows && typeof data.shows === 'object') {
+    return Object.values(data.shows).map(unwrapTitle)
+  }
+
+  if (Array.isArray(data.changes)) {
+    return data.changes.map(unwrapTitle)
+  }
+
   if (Array.isArray(data.results)) {
-    return data.results
+    return data.results.map(unwrapTitle)
   }
 
   if (Array.isArray(data.titles)) {
-    return data.titles
+    return data.titles.map(unwrapTitle)
   }
 
   if (Array.isArray(data.items)) {
-    return data.items
-  }
-
-  if (Array.isArray(data.shows)) {
-    return data.shows
+    return data.items.map(unwrapTitle)
   }
 
   return []
+}
+
+function unwrapTitle(item) {
+  if (!item || typeof item !== 'object') {
+    return item
+  }
+
+  return item.show || item.item || item.title || item
 }
 
 function getTitleType(rawType) {
@@ -312,6 +381,29 @@ function pickImage(value) {
   return firstText(value.url, value.imageUrl, value.src, value.w1440, value.w1080, value.w720, value.w600, value.w480)
 }
 
+function getNetflixOption(streamingOptions, country) {
+  if (!streamingOptions || typeof streamingOptions !== 'object') {
+    return null
+  }
+
+  const countryOptions = streamingOptions[country] || streamingOptions[String(country || '').toLowerCase()]
+  const optionGroups = countryOptions ? [countryOptions] : Object.values(streamingOptions)
+
+  for (const optionGroup of optionGroups) {
+    if (!Array.isArray(optionGroup)) {
+      continue
+    }
+
+    for (const option of optionGroup) {
+      if (firstText(option?.service?.id) === 'netflix') {
+        return option
+      }
+    }
+  }
+
+  return null
+}
+
 function getCreator(rawTitle, type) {
   const people = normalizeStringArray(
     type === 'Series' ? rawTitle.creators : rawTitle.directors,
@@ -322,7 +414,7 @@ function getCreator(rawTitle, type) {
   return people[0] || 'Netflix'
 }
 
-function getTagline(rawTitle, genres) {
+function getTagline(rawTitle, genres, country) {
   const tagline = firstText(rawTitle.tagline, rawTitle.shortDescription)
 
   if (tagline) {
@@ -330,39 +422,42 @@ function getTagline(rawTitle, genres) {
   }
 
   if (genres.length > 0) {
-    return `${genres.slice(0, 2).join(' and ')} picked from the live catalog.`
+    return `${genres.slice(0, 2).join(' and ')} streaming on Netflix ${String(country || NETFLIX_COUNTRY).toUpperCase()}.`
   }
 
-  return 'Streaming now from the live catalog.'
+  return `Streaming on Netflix ${String(country || NETFLIX_COUNTRY).toUpperCase()}.`
 }
 
 function getBadge(groupId, index, year) {
-  if (index < 10) {
+  if ((groupId === 'topMovies' || groupId === 'topSeries') && index < 10) {
     return 'Top 10'
   }
 
-  if (groupId === 'topMovies' || groupId === 'topSeries') {
-    return 'Top Rated'
+  if (groupId === 'newOnNetflix' || groupId === 'newMovies' || groupId === 'newSeries') {
+    return 'New on Netflix'
   }
 
-  if (groupId === 'indiaMovies') {
-    return 'India Favorite'
+  if (groupId === 'acclaimed') {
+    return 'Critics Pick'
   }
 
   if (year && year >= CURRENT_YEAR - 2) {
     return 'New Release'
   }
 
-  return 'Popular'
+  return 'Popular on Netflix'
 }
 
 function getTrendingScore(groupId, index, match, year) {
   const groupBoosts = {
-    popularMovies: 22,
-    popularSeries: 20,
-    topMovies: 14,
-    topSeries: 13,
-    indiaMovies: 17,
+    topMovies: 28,
+    topSeries: 27,
+    popularMovies: 24,
+    popularSeries: 23,
+    newMovies: 18,
+    newSeries: 18,
+    newOnNetflix: 19,
+    acclaimed: 15,
   }
   const recencyBoost = year && year >= CURRENT_YEAR - 2 ? 8 : 0
   const groupBoost = groupBoosts[groupId] || 0
@@ -401,7 +496,7 @@ function normalizeGenreName(value) {
   const genre = firstText(value)
   const lowerGenre = genre.toLowerCase()
 
-  if (lowerGenre === 'sci-fi' || lowerGenre === 'scifi' || lowerGenre === 'science fiction') {
+  if (lowerGenre === 'sci-fi' || lowerGenre === 'scifi' || lowerGenre === 'science fiction' || lowerGenre === 'science-fiction') {
     return 'Sci-Fi'
   }
 

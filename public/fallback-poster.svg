@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" role="img" aria-label="Fallback movie poster">
+  <defs>
+    <linearGradient id="poster-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#1c1c1f"/>
+      <stop offset="0.52" stop-color="#0b0b0d"/>
+      <stop offset="1" stop-color="#3a0509"/>
+    </linearGradient>
+    <linearGradient id="poster-glow" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#e50914" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#e50914" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#poster-bg)"/>
+  <rect x="48" y="54" width="504" height="792" rx="18" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="3"/>
+  <path d="M145 228h84l72 246 72-246h82v444h-78V377L337 672h-72l-42-295v295h-78V228Z" fill="#e50914"/>
+  <rect x="112" y="716" width="376" height="12" rx="6" fill="url(#poster-glow)"/>
+  <text x="300" y="778" fill="#f5f5f5" font-family="Arial, Helvetica, sans-serif" font-size="33" font-weight="800" text-anchor="middle">NETFLIX</text>
+  <text x="300" y="820" fill="#a1a1aa" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="middle">TITLE ART</text>
+</svg>

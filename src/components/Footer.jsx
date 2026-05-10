@@ -39,7 +39,10 @@ function Footer() {
         Service Code
       </button>
 
-      <p className="mt-5 text-xs">Netflix clone UI for portfolio learning. No authentication or streaming media is included.</p>
+      <p className="mt-5 text-xs">
+        Netflix clone UI for portfolio learning. Catalog metadata can load from RapidAPI; subscriptions are required on
+        Netflix for real playback.
+      </p>
     </footer>
   )
 }

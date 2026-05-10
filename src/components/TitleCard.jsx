@@ -2,6 +2,8 @@ import { Check, Info, Play, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { openPreview, selectIsInMyList, toggleMyList } from '../features/librarySlice'
+import FallbackImage from './FallbackImage'
+import { FALLBACK_BACKDROP, FALLBACK_POSTER } from '../utils/fallbackImages'
 
 function TitleCard({ title, variant = 'standard', compact = false }) {
   const dispatch = useDispatch()
@@ -17,8 +19,9 @@ function TitleCard({ title, variant = 'standard', compact = false }) {
     >
       <Link to={`/title/${title.id}`} className="netflix-focus block">
         <div className={variant === 'ranked' ? 'aspect-[16/9]' : 'aspect-[2/3]'}>
-          <img
+          <FallbackImage
             src={variant === 'ranked' ? title.backdrop : title.poster}
+            fallbackSrc={variant === 'ranked' ? FALLBACK_BACKDROP : FALLBACK_POSTER}
             alt={title.title}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             loading="lazy"
